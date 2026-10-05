@@ -4,10 +4,8 @@ import SectionHeading from './SectionHeading';
 import { useScrollReveal } from '@/hooks/useScrollReveal';
 import { services } from '@/data';
 
-const recipientEmail = 'fizawebstudio@gmail.com';
-
 const contactInfo = [
-  { icon: Mail, label: 'Email', value: recipientEmail, href: `mailto:${recipientEmail}` },
+  { icon: Mail, label: 'Email', value: 'fizawebstudio@gmail.com', href: 'mailto:fizawebstudio@gmail.com' },
   { icon: Phone, label: 'Availability', value: '0312 7195206', href: 'tel:03127195206' },
   { icon: MapPin, label: 'Location', value: 'Pakistan, Lahore - Remote', href: '#' },
 ];
@@ -17,60 +15,34 @@ export default function Contact() {
     name: '', email: '', phone: '', services: '', message: '',
   });
   const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
-  const [errorMessage, setErrorMessage] = useState('');
   const { ref, visible } = useScrollReveal();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setStatus('sending');
-    setErrorMessage('');
 
     try {
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL?.trim();
-      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY?.trim();
-
-      if (!supabaseUrl || !supabaseAnonKey) {
-        const fallbackSubject = encodeURIComponent(`Website inquiry from ${form.name || 'New Contact'}`);
-        const fallbackBody = encodeURIComponent(
-          [
-            `Name: ${form.name}`,
-            `Email: ${form.email}`,
-            `Phone: ${form.phone || 'Not provided'}`,
-            `Services Interested In: ${form.services || 'Not specified'}`,
-            '',
-            'Message:',
-            form.message,
-          ].join('\n')
-        );
-
-        window.location.href = `mailto:${recipientEmail}?subject=${fallbackSubject}&body=${fallbackBody}`;
-        setStatus('sent');
-        setForm({ name: '', email: '', phone: '', services: '', message: '' });
-        return;
-      }
-
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
       const apiUrl = `${supabaseUrl}/functions/v1/send-contact-email`;
 
       const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${supabaseAnonKey}`,
-          'apikey': supabaseAnonKey,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(form),
       });
 
-      const result = await response.json().catch(() => null);
       if (!response.ok) {
-        throw new Error(result?.error || 'Failed to send message. Please try again.');
+        throw new Error('Failed to send message');
       }
 
       setStatus('sent');
       setForm({ name: '', email: '', phone: '', services: '', message: '' });
       setTimeout(() => setStatus('idle'), 5000);
-    } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : 'Failed to send message. Please try again.');
+    } catch {
       setStatus('error');
       setTimeout(() => setStatus('idle'), 5000);
     }
@@ -148,7 +120,6 @@ export default function Contact() {
                   placeholder="Your phone number"
                   value={form.phone}
                   onChange={(v) => setForm({ ...form, phone: v })}
-                  required
                 />
                 <div>
                   <label className="block text-xs font-semibold text-ink-700 mb-2 uppercase tracking-wide">
@@ -159,7 +130,6 @@ export default function Contact() {
                       value={form.services}
                       onChange={(e) => setForm({ ...form, services: e.target.value })}
                       className="w-full appearance-none px-4 py-3 pr-10 rounded-xl bg-ink-50 border border-ink-100 text-ink-900 focus:outline-none focus:border-accent-400 focus:ring-2 focus:ring-accent-500/20 transition-all cursor-pointer"
-                      required
                     >
                       <option value="">Select a service</option>
                       {services.map((s) => (
@@ -173,6 +143,7 @@ export default function Contact() {
                 </div>
               </div>
 
+              {/* Message */}
               <div>
                 <label className="block text-xs font-semibold text-ink-700 mb-2 uppercase tracking-wide">
                   Message
@@ -214,7 +185,7 @@ export default function Contact() {
               )}
               {status === 'error' && (
                 <p className="text-center text-sm text-red-500 font-medium animate-fade-in">
-                  {errorMessage || 'Something went wrong. Please try again or email me directly.'}
+                  Something went wrong. Please try again or email me directly.
                 </p>
               )}
             </form>
